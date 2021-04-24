@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Adafruit Industries
+# Copyright (c) 2019 Adafruit Industries
 # Author: Tony DiCola & James DeVito
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -102,13 +102,25 @@ font = ImageFont.load_default()
 # Some other nice fonts to try: http://www.dafont.com/bitmap.php
 # font = ImageFont.truetype('Minecraftia.ttf', 8)
 
+import signal
+import sys
+
+def signal_handler(sig, frame):
+    print('got terminal signal')
+    draw.rectangle((0,0,width,height), outline=0, fill=0)
+    disp.image(image)
+    disp.display()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+
 while True:
 
     # Draw a black filled box to clear the image.
     draw.rectangle((0,0,width,height), outline=0, fill=0)
 
     # Shell scripts for system monitoring from here : https://unix.stackexchange.com/questions/119126/command-to-display-memory-usage-disk-usage-and-cpu-load
-    cmd = "hostname -I | cut -d\' \' -f1"
+    cmd = "hostname -I"
     IP = subprocess.check_output(cmd, shell = True )
     cmd = "top -bn1 | grep load | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'"
     CPU = subprocess.check_output(cmd, shell = True )
@@ -116,13 +128,15 @@ while True:
     MemUsage = subprocess.check_output(cmd, shell = True )
     cmd = "df -h | awk '$NF==\"/\"{printf \"Disk: %d/%dGB %s\", $3,$2,$5}'"
     Disk = subprocess.check_output(cmd, shell = True )
+    cmd = "vcgencmd measure_temp |cut -f 2 -d '='"
+    temp = subprocess.check_output(cmd, shell = True )
 
     # Write two lines of text.
 
-    draw.text((x, top),       "IP: " + str(IP),  font=font, fill=255)
-    draw.text((x, top+8),     str(CPU), font=font, fill=255)
-    draw.text((x, top+16),    str(MemUsage),  font=font, fill=255)
-    draw.text((x, top+25),    str(Disk),  font=font, fill=255)
+    draw.text((x, top), "IP: " + str(IP,'utf-8'), font=font, fill=255)
+    draw.text((x, top+8), str(CPU,'utf-8') + " " + str(temp,'utf-8') , font=font, fill=255)
+    draw.text((x, top+16), str(MemUsage,'utf-8'), font=font, fill=255)
+    draw.text((x, top+25), str(Disk,'utf-8'), font=font, fill=255)
 
     # Display image.
     disp.image(image)
